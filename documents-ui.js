@@ -102,7 +102,7 @@
     host.querySelectorAll('[data-doc-retry]').forEach(button => button.onclick = () => {
       const row = rows.find(r => r.id === button.dataset.docRetry);
       openCrewDialog(`<h2 id="crewDialogTitle">Recover incomplete upload</h2><p>${e(row.original_name)}</p>
-        <p>First try Finish upload. If the original is missing, choose the same file and try again.</p>
+        <p>First try Finish upload. If the original is missing, choose the same file and try again. On a phone, download the original to Downloads first and choose that saved copy.</p>
         <label for="doc-retry-file">Original file (only if needed)</label><input id="doc-retry-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.txt">
         <p id="doc-retry-status" role="alert"></p><button class="small-btn orange" id="doc-retry-submit">Finish upload</button>`);
       const retry = document.getElementById('doc-retry-submit'), message = document.getElementById('doc-retry-status');
@@ -122,7 +122,7 @@
     if (!active) { content.textContent = 'Choose a project first.'; return; }
     content.innerHTML = `<div class="callout"><b>${e(active.name)} • Shared Documents</b><br>
       Originals stay private to your workspace. Pending files are Admin-only; approved files are visible to all workspace members.<br>
-      <b>Admin review before sharing.</b> Open Review & file to enter details or request an AI suggestion. AI review requires the app owner to activate the connection.</div>
+      <b>Admin review before sharing.</b> Open Review & file to enter details or request an AI suggestion. You choose which originals to send for paid AI review.</div>
       ${admin ? `<div class="drawing-upload" id="document-drop"><h3>Drop daily reports and prints here</h3>
         <label for="document-files">Choose files or drag them here</label><input id="document-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.txt">
         <p class="muted">PDF, JPG, PNG or TXT • up to 20 MB each • up to 10 files per batch</p>
@@ -167,7 +167,7 @@
         try {
           const batch = selected.slice();
           for (const file of batch) {
-            notice(status, `Uploading ${completed + 1} of ${batch.length}: ${file.name}`);
+            notice(status, `Reading and uploading ${completed + 1} of ${batch.length}: ${file.name}`);
             await RivetDocuments.upload(active.id, file); completed++;
           }
           notice(status, `${completed} originals uploaded. Review them below before sharing.`);

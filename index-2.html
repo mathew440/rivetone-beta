@@ -346,7 +346,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (!window.supabase?.createClient) { error = 'Sign-in could not load. Reload RivetOne and try again.'; ready = true; emit(); return; }
     client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
       auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true},
-      global:{fetch:(url, options={})=>fetch(url,{...options, signal:options.signal || AbortSignal.timeout(15000)})}
+      global:{fetch:(url, options={})=>{
+        const pathname = new URL(typeof url === 'string' ? url : url.url || String(url)).pathname;
+        const timeout = pathname.startsWith('/storage/v1/') ? 120000 : pathname.startsWith('/functions/v1/') ? 90000 : 15000;
+        return fetch(url,{...options, signal:options.signal || AbortSignal.timeout(timeout)});
+      }}
     });
     // Do not await Supabase calls inside the auth callback (it holds an auth lock).
     client.auth.onAuthStateChange((event, next) => {
@@ -578,8 +582,8 @@ function initSharedCrewUI() {
 }
 
 </script>
-  <script src="documents-cloud.js?v=2"></script>
-  <script src="documents-ui.js?v=2"></script>
+  <script src="documents-cloud.js?v=3"></script>
+  <script src="documents-ui.js?v=3"></script>
   <script>
 (function(global){
   function normalize(text){return (text||'').replace(/\s+/g,' ').trim();}

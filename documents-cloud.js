@@ -29,6 +29,17 @@
     if (!mime || (file.type && file.type !== mime)) throw new Error('Use PDF, JPG, PNG or plain TXT files.');
     return {mime, extension:extensions[mime]};
   }
+  async function readOriginal(file) {
+    // Materialize file-provider bytes before starting a request. On phones a
+    // selected File can be a remote/expired handle even when its name is readable.
+    try {
+      const bytes = await file.arrayBuffer();
+      if (bytes.byteLength !== file.size) throw new Error('Incomplete file');
+      return bytes;
+    } catch {
+      throw new Error('This device could not read the original. Download the file to your phone\u2019s Downloads folder, then choose that saved copy.');
+    }
+  }
   async function list(project) {
     const ctx = access(), rows = [];
     for (let offset = 0; ; offset += 200) {
@@ -42,13 +53,15 @@
   async function upload(project, file) {
     const ctx = access(true), {mime, extension} = validateFile(file);
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(project)) throw new Error('Choose a valid project.');
+    const bytes = await readOriginal(file);
+    unchanged(ctx);
     const id = crypto.randomUUID(), path = `${ctx.workspaceId}/${id}/original.${extension}`;
     unwrap(await ctx.client.from('rivet_documents').insert({id, workspace_id:ctx.workspaceId,
       project_id:project, uploaded_by:ctx.userId, original_name:file.name,
       object_path:path, mime_type:mime, byte_size:file.size}).select('id').single());
     unchanged(ctx);
     try {
-      unwrap(await ctx.client.storage.from(bucket).upload(path, file, {contentType:mime, upsert:false}));
+      unwrap(await ctx.client.storage.from(bucket).upload(path, bytes, {contentType:mime, upsert:false}));
       unchanged(ctx);
       const row = unwrap(await ctx.client.rpc('rivet_finish_document', {p_id:id}));
       unchanged(ctx); return row;
@@ -67,7 +80,9 @@
     if (file.name !== row.original_name || file.size !== row.byte_size || mime !== row.mime_type) {
       throw new Error('The file does not match this incomplete entry. Choose the original file.');
     }
-    unwrap(await ctx.client.storage.from(bucket).upload(row.object_path, file, {contentType:mime, upsert:false}));
+    const bytes = await readOriginal(file);
+    unchanged(ctx);
+    unwrap(await ctx.client.storage.from(bucket).upload(row.object_path, bytes, {contentType:mime, upsert:false}));
     unchanged(ctx);
     const result = unwrap(await ctx.client.rpc('rivet_finish_document', {p_id:row.id}));
     unchanged(ctx); return result;
