@@ -419,6 +419,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
   window.CrewCloud = {
     init, refresh, signIn, signOut, resetPassword, setPassword, user, initials, validate,
+    documentContext:()=>session && member && client ? {client,userId:session.user.id,workspaceId:config.workspaceId,generation} : null,
     subscribe:fn=>events.addEventListener('change', fn),
     status:()=>({ready,configured:validConfig(),signedIn:!!session,authorized:!!member,healthy,error,recovery,workspaceName}),
     canManage:()=>!!session && healthy && member?.role === 'Admin' && navigator.onLine,
@@ -515,7 +516,7 @@ function confirmCrewRemoval(row) {
 }
 function renderCloudAccount(content) {
   const u = currentUser();
-  content.innerHTML = `<div class="permission-banner"><div><b>${esc(u.name)}</b><small>${esc(u.email)} • ${esc(u.role)}</small></div><span class="tag low">SIGNED IN</span></div><p>${esc(CrewCloud.status().workspaceName)}</p><p class="muted">Your administrator controls account access. Crew profiles are shared; reports, plans, calendar entries and other beta tools are still stored on this device.</p><div class="section-actions"><button class="small-btn" id="cloudSignOut">Sign Out</button></div><p class="crew-error" id="cloudAccountError" role="alert"></p>`;
+  content.innerHTML = `<div class="permission-banner"><div><b>${esc(u.name)}</b><small>${esc(u.email)} • ${esc(u.role)}</small></div><span class="tag low">SIGNED IN</span></div><p>${esc(CrewCloud.status().workspaceName)}</p><p class="muted">Your administrator controls account access. Crew profiles are shared. After shared-upload setup, originals submitted through Documents Inbox are also shared when an Admin approves them. Existing local reports, drawings, calendar entries and other beta tools remain on this device; they are not automatically migrated.</p><div class="section-actions"><button class="small-btn" data-route="documents">Documents Inbox</button><button class="small-btn" id="cloudSignOut">Sign Out</button></div><p class="crew-error" id="cloudAccountError" role="alert"></p>`;
   document.getElementById('cloudSignOut').onclick = async ()=>{try {await CrewCloud.signOut();} catch(e) {document.getElementById('cloudAccountError').textContent=e.message;}};
 }
 function syncCrewUI() {
@@ -538,8 +539,8 @@ function syncCrewUI() {
       document.getElementById('onsiteCount').textContent = `${sharedRoster().filter(x=>x.status==='Onsite').length} Onsite`;
     }
     if (crewRoute === 'crew') renderCrewPage(document.getElementById('pageContent'));
-    if (crewRoute === 'team') renderCloudAccount(document.getElementById('pageContent'));
-    if (currentUser().role !== 'Admin' && document.querySelector('#crewForm, #confirmRemoveCrew')) closeCrewDialog();
+    if (crewRoute === 'team') {renderCloudAccount(document.getElementById('pageContent'));wireRouteButtons();}
+    if (currentUser().role !== 'Admin' && document.querySelector('#crewForm, #confirmRemoveCrew, #documentReviewForm, #doc-retry-submit')) closeCrewDialog();
   }
 }
 let lastAuthScreen = '';
@@ -577,6 +578,8 @@ function initSharedCrewUI() {
 }
 
 </script>
+  <script src="documents-cloud.js?v=1"></script>
+  <script src="documents-ui.js?v=1"></script>
   <script>
 (function(global){
   function normalize(text){return (text||'').replace(/\s+/g,' ').trim();}
@@ -726,6 +729,7 @@ const DEFAULT_STATE = {
 };
 
 const ROUTES={
+  documents:['SHARED DOCUMENTS','Documents Inbox','Upload originals, review them, and file into shared Plans or Reports.'],
   projects:['PROJECTS','Projects','Active jobs, project teams and current phase.'],
   reports:['DAILY REPORTS','Daily Reports','Progress, manpower, delays, photos and notes.'],
   plans:['PLANS & DOCUMENTS','Plans & Documents','Upload real PDF drawings, track revisions and link issues to sheets.'],
@@ -798,6 +802,7 @@ function setCurrentUser(){return denied('switch account roles');}
 
 function renderHome(){
   view.innerHTML=''; view.appendChild(cloneTemplate('homeTemplate'));
+  const documentsLink=document.createElement('button');documentsLink.className='small-btn orange';documentsLink.dataset.route='documents';documentsLink.textContent='Shared Documents Inbox';view.prepend(documentsLink);
   const proj=(state.projects||[]).find(p=>p.id===state.currentProjectId)||state.projects?.[0];
   const hero=document.querySelector('.hero-card');
   if(proj && hero){const h=hero.querySelector('h1');const ps=hero.querySelectorAll('p');if(h)h.innerHTML=esc(proj.name).replace(/\s+of\s+/i,'<br/>of ');if(ps[1])ps[1].innerHTML=`${esc(proj.phase)}<br/><strong>${esc(proj.client)}</strong>`;if(ps[2])ps[2].textContent=`📍 ${proj.location}`}
@@ -829,6 +834,7 @@ function renderHome(){
 
 function renderAI(){
   view.innerHTML=''; view.appendChild(cloneTemplate('aiTemplate'));
+  const documentsNote=document.createElement('div');documentsNote.className='callout';documentsNote.innerHTML='<b>Have daily reports or prints?</b> <button class="small-btn" data-route="documents">Open Documents Inbox</button><p>Shared uploads support manual review. Cloud AI document extraction is not connected; the field-update tool below uses local rules.</p>';view.prepend(documentsNote);
   const input=document.getElementById('updateText');
   if(!can('aiUpdate')){
     input.disabled=true;document.getElementById('processBtn').disabled=true;document.getElementById('micBtn').disabled=true;
@@ -890,6 +896,7 @@ function renderSimple(route){
   const content=document.getElementById('pageContent');
 
   if(route==='projects') renderProjectsPage(content);
+  else if(route==='documents') window.RivetDocumentsUI.renderInbox(content);
   else if(route==='reports') renderReportsPage(content);
   else if(route==='plans') renderPlansPage(content);
   else if(route==='materials') content.innerHTML=`<div class="permission-banner"><div><b>${esc(currentUser().role)} access</b><small>${can('addMaterial')?'You can add material needs.':'View only.'}</small></div></div><div class="section-actions">${can('addMaterial')?'<button class="small-btn orange" id="addMaterialBtn">+ Add Material</button>':''}</div>`+state.materials.map(listRow).join('');
@@ -907,8 +914,10 @@ function renderSimple(route){
   else if(route==='schedule') content.innerHTML=`<div class="card-grid"><div class="tool-card"><h3>2nd Floor – South Wing</h3><p>Unit panels / trim</p><span class="tag low">In progress</span><span class="tag">Today</span></div><div class="tool-card"><h3>3rd Floor – Corridor</h3><p>Lighting verification / closeout</p><span class="tag med">Needs check</span></div><div class="tool-card"><h3>1st Floor – West Wing</h3><p>Next work area</p><span class="tag">Up next</span></div></div><div class="callout">Production build: schedules will support dependencies, look-ahead views and automatic alerts when a blocker threatens a milestone.</div>`;
   else if(route==='privacy') {
     content.innerHTML=`<div class="callout"><b>RivetOne Privacy Policy</b><br/>Effective September 16, 2026</div>
-    <div class="tool-card"><h3>Shared crew and local project tools</h3><p>Sign-in is handled by Supabase. Crew names, contact details, assignments, status and notes are stored in the connected workspace database and are visible to its members. Administrators can add, edit and remove crew profiles. Other project entries, photos, drawings and reports remain on this device.</p></div>
-    <div class="tool-card"><h3>What the app can access</h3><p>You may choose photos or PDF drawings from your device. Those items are used only for the project records you create in RivetOne and remain on the device in this release.</p></div>
+    <div class="tool-card"><h3>Shared crew and local project tools</h3><p>Sign-in is handled by Supabase. Crew names, contact details, assignments, status and notes are stored in the connected workspace database and are visible to its members. Administrators can add, edit and remove crew profiles. Existing beta project tools remain device-only except uploads explicitly made through Documents Inbox.</p></div>
+    <div class="tool-card"><h3>Shared original documents</h3><p>After the shared-document database setup is installed, files you explicitly submit through Documents Inbox are uploaded to private Supabase Storage. Pending originals are visible only to workspace Admins. Approval shares the original and its metadata with every workspace member, including Guests. Project selection organizes documents; it does not restrict member access within the workspace. No files are sent to an AI provider by this feature.</p></div>
+    <div class="tool-card"><h3>What the app can access</h3><p>The file picker only provides files you select. Existing local drawing and photo tools still store their files on this device. Documents Inbox accepts PDF, JPG, PNG and TXT originals up to 20 MB each. Shared downloads require a current authorized session; downloaded copies remain on the receiving device.</p></div>
+    <div class="tool-card"><h3>Original retention</h3><p>This first-stage inbox has no delete or overwrite action. Contact the workspace administrator for removal of shared originals using the storage administration tools. Resetting local beta data does not remove shared documents or revoke downloaded copies.</p></div>
     <div class="tool-card"><h3>Retention & deletion</h3><p>Removing a crew profile removes it from the active shared roster, but does not delete reports, sign-in accounts or database backups. Contact your administrator to revoke account access or request backup retention details. Clearing browser storage removes local project data and sign-in tokens; it does not delete the shared roster.</p></div>
     <div class="tool-card"><h3>Privacy questions</h3><p>Use the developer support email shown on RivetOne's Google Play listing for privacy questions. The public privacy-policy URL in the Play listing contains the complete policy.</p></div>`;
   }
@@ -917,6 +926,8 @@ function renderSimple(route){
     document.getElementById('resetLocalBtn').onclick=()=>{if(confirm('Reset this device’s beta reports, notes and other local entries? Shared crew profiles and your sign-in account will be kept.')){safeStorageRemove('rivetOneState');state=deepClone(DEFAULT_STATE);state.crew=sharedRoster().map(x=>[CrewCloud.initials(x.name),x.name]);persistState();render('home');}};
   } else content.innerHTML='<div class="placeholder">This screen is wired into the prototype navigation.</div>';
 
+  if(route==='plans'||route==='reports') window.RivetDocumentsUI.mountSection(content,route);
+  if(route==='more') {const link=document.createElement('button');link.className='small-btn orange';link.dataset.route='documents';link.textContent='Shared Documents Inbox';content.prepend(link);}
   setTimeout(()=>wirePageActions(route),0);updateAccountUI();
 }
 
@@ -1100,10 +1111,19 @@ updateAccountUI();
 updateDateTime();
 setInterval(updateDateTime,30000);
 initSharedCrewUI();
+// Upgrade a previously installed broad cache without installing a new worker.
+// Shared uploads remain online-only; never cache Supabase responses.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    const scope = new URL('./', location.href).href;
+    for (const registration of registrations) {
+      if (registration.scope === scope) void registration.update().catch(() => {});
+    }
+  }).catch(() => {});
+}
 
 
 
 </script>
 </body>
 </html>
-
