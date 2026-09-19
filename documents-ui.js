@@ -117,15 +117,16 @@
       };
     });
   }
-  function renderInbox(content) {
+  function renderInbox(content, {fieldUpdate = false} = {}) {
     const active = project(), admin = CrewCloud.canManage();
     if (!active) { content.textContent = 'Choose a project first.'; return; }
-    content.innerHTML = `<div class="callout"><b>${e(active.name)} • Shared Documents</b><br>
+    content.innerHTML = `${fieldUpdate ? '<h3>Attach files to your field update</h3><p class="muted">Upload schedules, screenshots, daily reports or prints for this project. Download the originals below whenever you need them. Files go to Admin review separately from your typed update; schedule dates are not added to the calendar automatically.</p>' : ''}<div class="callout"><b>${e(active.name)} • Shared Documents</b><br>
       Originals stay private to your workspace. Pending files are Admin-only; approved files are visible to all workspace members.<br>
       <b>Admin review before sharing.</b> Open Review & file to enter details or request an AI suggestion. You choose which originals to send for paid AI review.</div>
-      ${admin ? `<div class="drawing-upload" id="document-drop"><h3>Drop daily reports and prints here</h3>
-        <label for="document-files">Choose files or drag them here</label><input id="document-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.txt">
+      ${admin ? `<div class="drawing-upload" id="document-drop"><h3>${fieldUpdate ? 'Schedules, screenshots & documents' : 'Drop daily reports and prints here'}</h3>
+        <label for="document-files">${fieldUpdate ? 'Attach files' : 'Choose files or drag them here'}</label><input id="document-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.txt" style="max-width:100%;box-sizing:border-box">
         <p class="muted">PDF, JPG, PNG or TXT • up to 20 MB each • up to 10 files per batch</p>
+        ${fieldUpdate ? '<p class="muted">For an Excel schedule, save it as a PDF or take a screenshot first. On your phone, choose a copy saved in Downloads.</p>' : ''}
         <button class="small-btn orange" id="document-upload">Upload to Admin review</button>
         <p id="document-upload-status" role="status" aria-live="polite"></p></div>` : '<p class="muted">Read-only shared documents. Only connected Admins can upload and approve.</p>'}
       <div class="section-actions"><button class="small-btn" id="document-refresh">Refresh shared documents</button></div>

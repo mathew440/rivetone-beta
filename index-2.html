@@ -250,6 +250,7 @@ SOFTWARE.
       </div>
     </section>
     <section id="aiResult" class="panel hidden"></section>
+    <section id="fieldUpdateFiles" class="panel" aria-label="Field update files"></section>
   </template>
 
   <template id="simplePageTemplate">
@@ -583,7 +584,7 @@ function initSharedCrewUI() {
 
 </script>
   <script src="documents-cloud.js?v=3"></script>
-  <script src="documents-ui.js?v=3"></script>
+  <script src="documents-ui.js?v=4"></script>
   <script>
 (function(global){
   function normalize(text){return (text||'').replace(/\s+/g,' ').trim();}
@@ -838,7 +839,7 @@ function renderHome(){
 
 function renderAI(){
   view.innerHTML=''; view.appendChild(cloneTemplate('aiTemplate'));
-  const documentsNote=document.createElement('div');documentsNote.className='callout';documentsNote.innerHTML='<b>Have daily reports or prints?</b> <button class="small-btn" data-route="documents">Open Documents Inbox</button><p>Shared uploads support manual review. Cloud AI document extraction is not connected; the field-update tool below uses local rules.</p>';view.prepend(documentsNote);
+  window.RivetDocumentsUI.renderInbox(document.getElementById('fieldUpdateFiles'), {fieldUpdate:true});
   const input=document.getElementById('updateText');
   if(!can('aiUpdate')){
     input.disabled=true;document.getElementById('processBtn').disabled=true;document.getElementById('micBtn').disabled=true;
