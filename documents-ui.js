@@ -1,4 +1,4 @@
-/* Stage 1: review and file shared originals. AI extraction is deliberately not simulated. */
+/* Review originals; optional AI suggestions never approve or share a file. */
 (function () {
   'use strict';
   const e = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -35,7 +35,14 @@
       if (!CrewCloud.canManage()) return toast('Only an online Admin can approve uploads.');
       const row = rows.find(r => r.id === button.dataset.docReview);
       openCrewDialog(`<h2 id="crewDialogTitle">Review & file original</h2>
-        <p>${e(row.original_name)}</p><p class="muted">Choose the destination yourself. AI extraction is not connected.</p>
+        <p>${e(row.original_name)}</p><p class="muted">Fill in the details, or ask AI for a suggestion and check its work.</p>
+        <button type="button" class="small-btn" id="doc-ai-request">Ask AI to read this original</button>
+        <p class="muted">AI review sends this original to OpenAI. API usage is billed to the app owner. Up to 5 MB per file and 20 requests per workspace per day. It will not share or file anything automatically.</p>
+        <p id="doc-ai-status" role="status" aria-live="polite"></p>
+        <div id="doc-ai-suggestion" hidden><h3>AI suggestion — verify against the original</h3>
+          <p id="doc-ai-summary"></p><ul id="doc-ai-warnings"></ul>
+          <p id="doc-ai-fields"></p><button type="button" class="small-btn" id="doc-ai-use">Use these suggested details</button>
+        </div>
         <form id="documentReviewForm"><div class="form-grid">
           <div class="field full"><label for="doc-kind">File under</label><select id="doc-kind" name="kind" required>
             <option value="">Choose destination</option><option value="report">Daily Reports</option><option value="plan">Plans</option><option value="other">Other documents</option>
@@ -50,6 +57,32 @@
       form.elements.kind.onchange = () => {
         form.elements.date.required = form.elements.kind.value === 'report';
         form.elements.sheet.required = form.elements.kind.value === 'plan';
+      };
+      const aiButton = document.getElementById('doc-ai-request');
+      const aiStatus = document.getElementById('doc-ai-status');
+      let suggestion = null;
+      aiButton.onclick = async () => {
+        if (!confirm('Send this original to OpenAI for a paid AI review? Nothing will be filed or shared until you approve.')) return;
+        aiButton.disabled = true;
+        notice(aiStatus, 'Reading the original… This can take up to a minute.');
+        try {
+          const answer = await RivetDocuments.analyze(row);
+          if (!form.isConnected) return;
+          suggestion = answer;
+          document.getElementById('doc-ai-summary').textContent = answer.summary;
+          const warnings = document.getElementById('doc-ai-warnings'); warnings.replaceChildren();
+          for (const message of answer.warnings || []) { const li=document.createElement('li'); li.textContent=message; warnings.append(li); }
+          document.getElementById('doc-ai-fields').textContent = [answer.kind,answer.title,answer.date,answer.sheet,answer.revision].filter(Boolean).join(' • ');
+          document.getElementById('doc-ai-suggestion').hidden = false;
+          notice(aiStatus, 'Suggestion ready. Check it, then use or edit the details below.');
+        } catch (error) { if (form.isConnected) notice(aiStatus,error.message,true); }
+        finally { if (aiButton.isConnected) aiButton.disabled = false; }
+      };
+      document.getElementById('doc-ai-use').onclick = () => {
+        if (!suggestion || !CrewCloud.canManage()) return;
+        for (const name of ['kind','title','date','sheet','revision']) form.elements[name].value = suggestion[name] || '';
+        form.elements.kind.onchange();
+        notice(aiStatus,'Suggested details filled in. Correct missing details, then approve when ready.');
       };
       form.onsubmit = async event => {
         event.preventDefault(); if (form.dataset.busy) return;
@@ -89,7 +122,7 @@
     if (!active) { content.textContent = 'Choose a project first.'; return; }
     content.innerHTML = `<div class="callout"><b>${e(active.name)} • Shared Documents</b><br>
       Originals stay private to your workspace. Pending files are Admin-only; approved files are visible to all workspace members.<br>
-      <b>AI sorting is not connected yet.</b> This first stage supports manual review and filing.</div>
+      <b>Admin review before sharing.</b> Open Review & file to enter details or request an AI suggestion. AI review requires the app owner to activate the connection.</div>
       ${admin ? `<div class="drawing-upload" id="document-drop"><h3>Drop daily reports and prints here</h3>
         <label for="document-files">Choose files or drag them here</label><input id="document-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.txt">
         <p class="muted">PDF, JPG, PNG or TXT • up to 20 MB each • up to 10 files per batch</p>

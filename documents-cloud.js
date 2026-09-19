@@ -1,4 +1,4 @@
-/* Shared originals, using the existing signed-in Supabase client. No AI calls. */
+/* Shared originals and optional server-side AI review. Browser holds no AI key. */
 (function () {
   'use strict';
   const bucket = 'rivet-documents';
@@ -84,5 +84,24 @@
     const blob = unwrap(await ctx.client.storage.from(bucket).download(row.object_path));
     unchanged(ctx); return blob;
   }
-  window.RivetDocuments = {list, upload, finish, approve, download, validateFile};
+  async function analyze(row) {
+    const ctx = access(true);
+    if (row.status !== 'pending') throw new Error('Only pending originals can be reviewed by AI.');
+    if (row.byte_size > 5 * 1024 * 1024) throw new Error('AI review supports up to 5 MB. You can still file this original manually.');
+    const result = await ctx.client.functions.invoke('rivet-analyze-document', {
+      body:{document_id:row.id,consent:true}
+    });
+    unchanged(ctx);
+    if (result.error) {
+      let message = 'AI review is unavailable. You can still file this original manually.';
+      try {
+        const body = await result.error.context?.json();
+        if (typeof body?.error === 'string' && body.error.length < 300) message = body.error;
+      } catch {}
+      unchanged(ctx); throw new Error(message);
+    }
+    if (!result.data?.suggestion) throw new Error('AI did not return a suggestion. Use manual filing.');
+    return result.data.suggestion;
+  }
+  window.RivetDocuments = {list, upload, finish, approve, download, analyze, validateFile};
 })();
