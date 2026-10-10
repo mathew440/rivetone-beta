@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RivetOne mobile layout checks</title>
+<style>body{font:15px system-ui;background:#07111d;color:white;margin:20px}button,select{font:inherit;padding:8px;margin:5px}iframe{border:1px solid #48718b;height:740px;background:#07111d}#result{white-space:pre-wrap} .pass{color:#9de8b6}</style>
+<h1>RivetOne mobile layout checks</h1><p>Uses isolated practice records. No saved jobs are read or changed.</p><button id="run">Run layout checks</button><label>Preview width <select id="width"><option>320</option><option>360</option><option>393</option><option selected>412</option><option>560</option><option>768</option><option>1180</option></select></label><p id="result" role="status">Ready</p><iframe title="Practice phone preview" id="preview" width="412" src="index.html?practice=1"></iframe>
+<script>
+const frame=document.querySelector('iframe'),result=document.querySelector('#result');
+const settle=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+document.querySelector('#width').onchange=async e=>{frame.width=e.target.value;await settle()};
+document.querySelector('#run').onclick=async()=>{
+ const d=frame.contentDocument;if(!d.querySelector('.app-scroll')){result.textContent='FAIL: v0.10.1 not loaded';return}let pass=0,fail=[];const check=(ok,label)=>{if(ok)pass++;else fail.push(label)};
+ for(const width of [320,360,393,412,560,768,1180]){frame.width=width;await settle();
+ for(const mode of ['projects','service']){d.getElementById(mode+'Mode').click();await settle();
+ const sc=d.querySelector('.app-scroll'),nav=d.querySelector('.bottom'),rect=s=>d.querySelector(s).getBoundingClientRect(),tag=width+' '+mode;
+ check(rect('.mode-switch').bottom<=rect('.projectbar').top,tag+' mode switch overlap');
+ check(sc.getBoundingClientRect().bottom<=nav.getBoundingClientRect().top+1,tag+' navigation covers scroll area');
+ check(sc.scrollWidth<=sc.clientWidth+1,tag+' horizontal overflow');
+ const controls=[...d.querySelectorAll('.bottom button')].filter(e=>e.getBoundingClientRect().width);check(controls.every(e=>{let r=e.getBoundingClientRect();return r.left>=0&&r.right<=width+1&&r.top>=nav.getBoundingClientRect().top}),tag+' nav controls outside bar');
+ check([...d.querySelectorAll('.brand-wrap,#searchBtn,#bellBtn,#avatarBtn')].every(e=>e.getBoundingClientRect().right<=width),tag+' header clipping');
+ sc.scrollTop=sc.scrollHeight;await settle();check(rect('.section.active').bottom<=nav.getBoundingClientRect().top+1,tag+' last content unreachable');sc.scrollTop=0;
+ }}
+ frame.width=412;d.getElementById('serviceMode').click();d.querySelector('#practiceBanner').classList.add('hidden');await settle();result.textContent=pass+' checks passed; '+fail.length+' failed'+(fail.length?'\n'+fail.join('\n'):'');result.className=fail.length?'':'pass';
+};
+</script>

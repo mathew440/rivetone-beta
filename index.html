@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>RivetOne v0.10.0 — Projects &amp; Service</title>
+<title>RivetOne v0.10.1 — Projects &amp; Service</title>
 <style>
 :root{--bg:#050d16;--navy:#06101a;--panel:#0d1b29;--panel2:#102236;--line:#193d59;--line2:#285a7e;--text:#f5f8fc;--muted:#9fb4c9;--blue:#249fff;--blue2:#70c4ff;--orange:#ff8a00;--green:#49d15d;--red:#ff5548;--purple:#8e5cff;--yellow:#ffc429;--shadow:0 18px 42px rgba(0,0,0,.26)}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}body{min-height:100vh}button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}.app{max-width:1180px;margin:0 auto;padding-bottom:102px;min-height:100vh;background:linear-gradient(180deg,#07111d,#050d16)}
@@ -30,10 +30,50 @@
 .plan-top{display:grid;grid-template-columns:1fr 320px;gap:12px}.plan-stage{position:relative;border:1px solid #31506a;border-radius:16px;overflow:hidden;background:#e9ebe6;min-height:520px;touch-action:none}.plan-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;user-select:none;pointer-events:none}.overlay-img{opacity:.55;transform-origin:center center;mix-blend-mode:multiply}.draw-layer{position:absolute;inset:0}.measure-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--red);border:2px solid #fff;transform:translate(-50%,-50%)}.measure-line{position:absolute;height:3px;background:var(--red);transform-origin:left center}.measure-label{position:absolute;background:#fff;color:#111;border-radius:7px;padding:3px 6px;font-weight:900;font-size:12px;transform:translate(-50%,-120%)}.plan-controls{display:grid;gap:9px}.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:10px}.tabs button.active{background:var(--blue);color:#06111d;border-color:var(--blue)}.slider-row{display:grid;grid-template-columns:80px 1fr 48px;gap:8px;align-items:center}.slider-row input{width:100%}
 .service-list{display:grid;gap:9px}.service-call{border:1px solid #1c405d;border-radius:14px;background:#0b1927;padding:12px}.service-call .topline{display:flex;justify-content:space-between;gap:8px}.status{font-size:11px;border:1px solid #31506a;border-radius:999px;padding:5px 8px}.status.done{color:#9de8b6;border-color:rgba(73,209,93,.5)}.status.route{color:#a7d8ff;border-color:rgba(36,159,255,.5)}.status.parts{color:#ffc087;border-color:rgba(255,138,0,.5)}
 @media(max-width:900px){.tiles{grid-template-columns:repeat(3,1fr)}.main{grid-template-columns:1fr}.plan-top{grid-template-columns:1fr}.photos{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.header{padding-left:12px;padding-right:12px}.brand{font-size:20px;letter-spacing:3px}.tagline{display:none}.logo{width:52px;height:52px}.top-actions .icon-btn{width:36px;height:40px;font-size:19px}.mode-switch{position:absolute;right:12px;top:75px}.projectbar{margin-top:44px}.project-name{font-size:18px}.switch-btn{padding:10px}.weather{grid-template-columns:1fr}.weather>div+div{border-left:0;border-top:1px solid #29445a;margin-top:8px;padding-top:12px}.service-strip{grid-template-columns:1fr 1fr 1fr}.tiles{grid-template-columns:repeat(2,1fr);padding-left:12px;padding-right:12px}.ai-bar{margin-left:12px;margin-right:12px;grid-template-columns:auto 1fr auto}.ai-label{display:none}.main,.tool-page{padding-left:12px;padding-right:12px}.tool-grid{grid-template-columns:1fr}.quick-actions{grid-template-columns:repeat(2,1fr)}.progress{gap:4px}.ring{width:72px;height:72px}.ring b{width:56px;height:56px;font-size:17px}.plan-stage{min-height:430px}}
+
+/* Responsive shell: navigation owns space instead of covering the page. */
+html,body{height:100%;overflow:hidden}
+.app{height:100vh;height:100dvh;min-height:0;padding-bottom:0;display:flex;flex-direction:column;overflow:hidden}
+.app-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior-y:contain;padding-bottom:16px}
+.bottom{position:relative;left:auto;bottom:auto;transform:none;width:100%;flex:none;display:flex;align-items:stretch;gap:2px;padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+.bottom button{flex:1;min-width:0;min-height:52px;justify-content:center;padding:2px;gap:3px}
+.bottom span{height:26px;line-height:26px;font-size:24px}
+.bottom small{font-size:11px;line-height:1.3;overflow-wrap:anywhere}
+.bottom .ai-nav span{width:30px;height:26px;margin-top:0;border-radius:8px;border:0;box-shadow:none;background:#173a57;line-height:26px}
+.logo,.project-thumb,.avatar{flex-shrink:0}
+.avatar{color:#fff}
+.project-left{flex:1;min-width:0}
+.project-meta{overflow-wrap:anywhere}
+.switch-btn{flex-shrink:0}
+.sheet{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+@media(max-width:760px){
+ .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 8px}
+ .top-actions{display:contents}
+ .brand-wrap{gap:8px}
+ .brand{font-size:clamp(16px,4.4vw,23px);letter-spacing:2px}
+ .tagline{display:none}
+ .logo{width:42px;height:42px;border-radius:11px}
+ .mode-switch{position:static;grid-column:1/-1;grid-row:2;justify-self:stretch;display:flex}
+ .mode-switch button{flex:1;min-height:40px;font-size:13px}
+ .topbar>.brand-wrap{grid-row:1;grid-column:1}
+ .top-actions>.icon-btn,.top-actions>.avatar{grid-row:1;width:38px;height:40px;font-size:19px}
+ .topbar{grid-template-columns:minmax(0,1fr) 38px 38px 38px}
+ #searchBtn{grid-column:2}#bellBtn{grid-column:3}#avatarBtn{grid-column:4}
+ .projectbar{margin-top:12px;align-items:flex-start;flex-wrap:wrap;gap:10px;padding:10px}
+ .project-left{flex-basis:100%;gap:10px}
+ .project-thumb{width:44px;height:44px;font-size:25px}
+ .project-name{white-space:normal;font-size:18px;line-height:1.25;overflow-wrap:anywhere}
+ .project-meta{font-size:13px;line-height:1.4;margin-top:3px}
+ .switch-btn{width:100%;min-height:40px;padding:8px;font-size:13px}
+ .header{padding:12px}
+ .service-stat{padding:8px;min-width:0}.service-stat small{font-size:12px;overflow-wrap:anywhere}
+ .page-head,.card-head{flex-wrap:wrap}
+}
+@media(max-width:360px){.brand{font-size:15px;letter-spacing:1px}.brand-wrap{gap:6px}.logo{width:34px;height:34px}.topbar{gap:10px 5px}}
 </style>
 </head>
 <body>
-<div class="app"><p id="practiceBanner" class="card hidden" role="status">PRACTICE MODE — example records only. Changes disappear on reload; your saved jobs are untouched.</p>
+<div class="app"><div class="app-scroll"><p id="practiceBanner" class="card hidden" role="status">PRACTICE MODE — example records only. Changes disappear on reload; your saved jobs are untouched.</p>
 <header class="header">
  <div class="topbar">
   <div class="brand-wrap"><div class="logo"><img src="icon-192.png" alt="RivetOne"></div><div><div class="brand">RIVET<span class="one">ONE</span></div><div class="tagline">KEEP THE JOB TOGETHER</div></div></div>
@@ -42,7 +82,7 @@
  <div class="projectbar"><div class="project-left"><div class="project-thumb" id="projectIcon">🏗️</div><div style="min-width:0"><div class="project-name" id="projectName"></div><div class="project-meta" id="projectMeta"></div></div></div><button class="switch-btn" id="switchJob">⇄ Switch Job</button></div>
  <div class="weather" id="projectWeather"><div><span style="font-size:34px">☀️</span> <span class="weather-big">72°</span> Partly Cloudy<small>Sample weather · not live</small></div><div><b style="font-size:20px" id="dateLabel"></b><small id="timeLabel"></small></div></div>
  <div class="service-strip hidden" id="serviceStrip"><div class="service-stat"><small class="muted">Calls today</small><b id="svcToday">0</b></div><div class="service-stat"><small class="muted">Techs active</small><b id="svcTechs">0</b></div><div class="service-stat"><small class="muted">Vans</small><b id="svcVans">0</b></div></div>
-<div class="actions" style="position:relative;z-index:2"><span class="pill" id="deviceConnection" role="status"></span><button class="btn small" data-open="apps">Job Apps</button><button class="btn small" data-open="backup">Backup &amp; Connection</button><span class="pill">v0.10.0 · Device-only</span></div>
+<div class="actions" style="position:relative;z-index:2"><span class="pill" id="deviceConnection" role="status"></span><button class="btn small" data-open="apps">Job Apps</button><button class="btn small" data-open="backup">Backup &amp; Connection</button><span class="pill">v0.10.1 · Device-only</span></div>
 <div id="storageWarning" role="alert" class="hidden" style="margin-top:10px;color:#ffc087"></div>
 </header>
 
@@ -88,7 +128,8 @@
 <section id="customers" class="section tool-page"><div class="page-head"><h1>Customers</h1><button class="btn primary" data-svc-action="customer">+ Add Customer</button></div><div id="customerList"></div></section>
 <section id="serviceIssues" class="section tool-page"><div class="page-head"><h1>Service Callbacks</h1></div><div class="card" id="callbackList"></div></section>
 </div>
-<nav class="bottom"><button class="active" data-nav="today"><span>⌂</span><small>Today</small></button><button data-nav="plans" id="plansNav"><span>▱</span><small>Plans</small></button><button class="ai-nav" data-nav="ai"><span>✦</span><small>AI</small></button><button data-nav="messages"><span>◌</span><small>Messages</small></button><button data-nav="more"><span>☰</span><small>More</small></button></nav>
+</div>
+<nav class="bottom" aria-label="Main navigation"><button class="active" data-nav="today"><span>⌂</span><small>Today</small></button><button data-nav="plans" id="plansNav"><span>▱</span><small>Plans</small></button><button class="ai-nav" data-nav="ai"><span>✦</span><small>AI</small></button><button data-nav="messages"><span>◌</span><small>Messages</small></button><button data-nav="more"><span>☰</span><small>More</small></button></nav>
 <div class="modal" id="modal"><div class="sheet"><h2 id="modalTitle"></h2><div id="modalBody"></div><div class="sheet-actions"><button class="btn" id="modalCancel">Cancel</button><button class="btn primary" id="modalSave">Save</button></div></div></div><div class="toast" id="toast"></div><div class="undo" id="undoBar"><span id="undoText"></span><button class="btn small" id="undoBtn">Undo</button></div>
 <script>
 /* Local Field Beta backup; never reads cloud credentials or other storage keys. */
@@ -250,7 +291,7 @@ document.getElementById('checkDeviceConnection').onclick=updateDeviceStatus;
 window.addEventListener('online',updateDeviceStatus);window.addEventListener('offline',updateDeviceStatus);
 document.getElementById('exportFieldBackup').onclick=async()=>{
  const button=document.getElementById('exportFieldBackup'),message=document.getElementById('backupResult');button.disabled=true;message.textContent='Preparing backup…';
- try{const result=await fieldStore.backup({...clone(state),...(unsavedForm?{unsavedForm}:{} )});const url=URL.createObjectURL(result.blob),a=document.createElement('a');a.href=url;a.download='RivetOne-v0.10.0-device-'+new Date().toISOString().replace(/[:.]/g,'-')+'.zip';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);message.textContent='Download requested. Check your Downloads folder. '+(result.manifest.warnings.length?'Backup has warnings; see manifest.json.':'Includes this browser’s local records only.');}catch(e){message.textContent='Backup failed: '+e.message;}finally{button.disabled=false;}
+ try{const result=await fieldStore.backup({...clone(state),...(unsavedForm?{unsavedForm}:{} )});const url=URL.createObjectURL(result.blob),a=document.createElement('a');a.href=url;a.download='RivetOne-v0.10.1-device-'+new Date().toISOString().replace(/[:.]/g,'-')+'.zip';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);message.textContent='Download requested. Check your Downloads folder. '+(result.manifest.warnings.length?'Backup has warnings; see manifest.json.':'Includes this browser’s local records only.');}catch(e){message.textContent='Backup failed: '+e.message;}finally{button.disabled=false;}
 };
 function renderAppLinks(){
  const project=p();document.getElementById('appsProject').textContent=project.name;
