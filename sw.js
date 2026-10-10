@@ -1,7 +1,13 @@
-const CACHE_NAME = 'rivetone-static-v071';
+const CACHE_NAME = 'rivetone-static-v080';
 const ASSETS = [
   './',
   './index.html',
+  './index-2.html',
+  './index.html.html',
+  './backup.js?v=0.8.0',
+  './connection-ui.js?v=0.8.0',
+  './documents-cloud.js?v=3',
+  './documents-ui.js?v=4',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',

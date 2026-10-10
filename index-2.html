@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1014" />
-  <meta name="rivetone-build" content="2026-09-19-menu-logo-signin-1" />
-  <title>RivetOne Beta — Keep the Job Together</title>
+  <meta name="rivetone-build" content="2026-10-10-v0.8.0-backup-connection" />
+  <title>RivetOne v0.8.0 — Keep the Job Together</title>
   <meta name="description" content="RivetOne field-first construction management prototype for crews, foremen, supers and project teams." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -249,6 +249,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -->
+<style>.device-recovery{margin-top:24px;padding-top:16px;border-top:1px solid #39434b;font-size:13px;color:#becad2}.device-recovery p{overflow-wrap:anywhere}[data-backup-status]{overflow-wrap:anywhere}[hidden]{display:none!important}</style>
 </head>
 <body>
   <div id="introOverlay" class="intro-overlay" aria-label="RivetOne welcome">
@@ -265,6 +266,7 @@ SOFTWARE.
         <h2 id="authPanelTitle">Your workspace.</h2>
         <p class="auth-panel-copy">Sign in and pick up where you left off.</p>
         <div id="cloudAuth"><p role="status">Loading secure sign-in…</p></div>
+        <div class="device-recovery"><p>Cloud unavailable? Preserve this browser’s local work without signing in.</p><button type="button" class="small-btn" data-device-backup>Export this device</button><p role="status" data-backup-status></p><small>Local records and drawings only. Shared files and sign-in details are excluded. v0.8.0</small></div>
         <p class="auth-footnote">RivetOne <span aria-hidden="true">/</span> Field Beta</p>
       </section>
     </div>
@@ -437,6 +439,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   const guest = {name:'Signed out', initials:'?', role:'Guest'};
   let client, session = null, member = null, rows = [], workspaceName = '';
   let generation = 0, revision = 0, refreshing = null, healthy = false, error = '', ready = false;
+  let lastSuccess = null, failures = 0, nextRefreshAt = 0;
   let recovery = /(?:#|&)type=(?:recovery|invite)(?:&|$)/.test(location.hash);
   const events = new EventTarget();
   const initials = name => String(name).trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
@@ -453,13 +456,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return member && session ? {id:session.user.id, name:member.display_name,
       initials:initials(member.display_name), role:member.role, email:session.user.email || ''} : guest;
   }
-  function clear() { member = null; rows = []; healthy = false; workspaceName = ''; }
+  function clear() { member = null; rows = []; healthy = false; workspaceName = ''; lastSuccess = null; failures = 0; nextRefreshAt = 0; }
   function setSession(next) {
     if (session?.user.id === next?.user.id && !!session === !!next) { session = next; return; }
     generation++; session = next; clear(); error = ''; refreshing = null; emit();
   }
   async function refresh() {
     if (!session || !client) return;
+    if (!navigator.onLine) { healthy=false; error='Device offline. Shared changes are disabled; export local work before closing.'; emit(); return; }
     if (refreshing) return refreshing;
     const gen = generation, rev = revision, id = session.user.id;
     const task = (async () => {
@@ -479,11 +483,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         }
         if (gen !== generation) return;
         member = membership; if (rev === revision) rows = nextRows; workspaceName = workspace.name;
-        healthy = true; error = ''; emit();
+        healthy = true; error = ''; lastSuccess = new Date().toISOString(); failures=0; nextRefreshAt=Date.now()+60000; emit();
       } catch (e) {
         if (gen !== generation) return;
-        healthy = false;
-        error = 'Cannot refresh shared crew. Check your connection and retry. Changes are paused.';
+        healthy = false; failures++; nextRefreshAt=Date.now()+Math.min(300000,15000*2**Math.min(failures-1,5));
+        error = 'Cloud connection could not be verified. Shared changes are disabled and displayed crew may be out of date. Retry when connected; a paused service is one possible cause.';
         emit();
       }
     })();
@@ -511,7 +515,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       const data = fail(await client.auth.getSession()); setSession(data.session);
       ready = true; emit(); await refresh();
     } catch { ready = true; error = 'Could not restore sign-in. Please sign in again.'; emit(); }
-    setInterval(() => { if (!document.hidden) void refresh(); }, 15000);
+    setInterval(() => { if (!document.hidden && navigator.onLine && Date.now() >= nextRefreshAt) void refresh(); }, 15000);
     window.addEventListener('online', () => void refresh());
     window.addEventListener('offline', () => { healthy = false; error = 'Offline. Shared crew changes are paused until you reconnect.'; emit(); });
     window.addEventListener('focus', () => void refresh());
@@ -574,7 +578,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     init, refresh, signIn, signOut, resetPassword, setPassword, user, initials, validate,
     documentContext:()=>session && member && client ? {client,userId:session.user.id,workspaceId:config.workspaceId,generation} : null,
     subscribe:fn=>events.addEventListener('change', fn),
-    status:()=>({ready,configured:validConfig(),signedIn:!!session,authorized:!!member,healthy,error,recovery,workspaceName}),
+    status:()=>({ready,configured:validConfig(),signedIn:!!session,authorized:!!member,healthy,error,recovery,workspaceName,lastSuccess,nextRefreshAt}),
     canManage:()=>!!session && healthy && member?.role === 'Admin' && navigator.onLine,
     roster:project=>rows.filter(row=>row.project_id === project).sort((a,b)=>a.name.localeCompare(b.name)),
     add:(project, input)=>write('insert', project, input),
@@ -603,7 +607,7 @@ function crewButton(row, compact = false) {
 }
 function crewStatusNote() {
   const s = CrewCloud.status();
-  return `<p class="crew-sync-note" role="status">${esc(s.error || (s.healthy?'Shared crew • refreshes every 15 seconds while open':'Loading shared crew…'))}</p>`;
+  return `<p class="crew-sync-note" role="status">${esc(s.error || (s.healthy?'Shared crew • checked every minute while open':'Loading shared crew…'))}</p>`;
 }
 function renderCrewPage(content) {
   const roster = sharedRoster();
@@ -673,6 +677,7 @@ function renderCloudAccount(content) {
   document.getElementById('cloudSignOut').onclick = async ()=>{try {await CrewCloud.signOut();} catch(e) {document.getElementById('cloudAccountError').textContent=e.message;}};
 }
 function syncCrewUI() {
+  window.RivetConnection?.update();
   const s = CrewCloud.status();
   const signature = `${currentUser().id || ''}:${currentUser().role}`;
   const accountChanged = signature !== crewAccountSignature;
@@ -731,6 +736,8 @@ function initSharedCrewUI() {
 }
 
 </script>
+  <script src="backup.js?v=0.8.0"></script>
+  <script src="connection-ui.js?v=0.8.0"></script>
   <script src="documents-cloud.js?v=3"></script>
   <script src="documents-ui.js?v=4"></script>
   <script>
@@ -898,7 +905,7 @@ const ROUTES={
   issues:['ISSUES / RFIs','Issues / RFIs','One list for punch, quality, safety, material blockers and RFIs.'],
   safety:['SAFETY','Safety','Toolbox talks, observations, checklists and incident capture.'],
   team:['TEAM & ACCESS','Team & Access','Role-based permissions for office, field and guests.'],
-  sync:['SYNC CENTER','Sync Center','Offline queue, last sync and cloud-ready status.'],
+  sync:['BACKUP & CONNECTION','Backup & Connection','Export this device and check shared access.'],
   privacy:['PRIVACY','Privacy Policy','How RivetOne handles information on this device.'],
   more:['MORE','More','Accounts, permissions, sync, exports and app settings.']
 };
@@ -1085,7 +1092,7 @@ function renderSimple(route){
     <div class="tool-card"><h3>Privacy questions</h3><p>Use the developer support email shown on RivetOne's Google Play listing for privacy questions. The public privacy-policy URL in the Play listing contains the complete policy.</p></div>`;
   }
   else if(route==='more') {
-    content.innerHTML=`<div class="list-row"><i class="status-dot green"></i><div><b>RivetOne v0.7</b><small>Keep the Job Together.</small></div></div><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="calendar"><i class="status-dot green"></i><div><b>Team Calendar</b><small>Assignments, days off and vacation visibility</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="messages"><i class="status-dot green"></i><div><b>Message Board</b><small>Project-wide field communication</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="planlab"><i class="status-dot yellow"></i><div><b>Plan Lab</b><small>Measure, overlay and AI circuit trace beta</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="team"><i class="status-dot green"></i><div><b>Team & Access</b><small>${esc(currentUser().name)} • ${esc(currentUser().role)}</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="privacy"><i class="status-dot green"></i><div><b>Privacy Policy</b><small>Local-first data handling for this release</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="sync"><i class="status-dot ${state.syncQueue?.length?'yellow':'green'}"></i><div><b>Sync Center</b><small>${state.syncQueue?.length||0} pending • ${state.lastSync?'Last '+esc(state.lastSync):'Never synced'}</small></div><span>›</span></button><div class="callout"><b>Shared crew is connected to your account.</b><br/>Crew profiles sync across devices. Other beta tools still save on this device. Open Team &amp; Access to sign out.</div><button class="small-btn" id="resetLocalBtn">Reset Local Beta Data</button>`;
+    content.innerHTML=`<div class="list-row"><i class="status-dot green"></i><div><b>RivetOne v0.8.0</b><small>Keep the Job Together.</small></div></div><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="calendar"><i class="status-dot green"></i><div><b>Team Calendar</b><small>Assignments, days off and vacation visibility</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="messages"><i class="status-dot green"></i><div><b>Message Board</b><small>Project-wide field communication</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="planlab"><i class="status-dot yellow"></i><div><b>Plan Lab</b><small>Measure, overlay and AI circuit trace beta</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="team"><i class="status-dot green"></i><div><b>Team & Access</b><small>${esc(currentUser().name)} • ${esc(currentUser().role)}</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="privacy"><i class="status-dot green"></i><div><b>Privacy Policy</b><small>Local-first data handling for this release</small></div><span>›</span></button><button class="list-row" style="width:100%;background:none;color:inherit;border-left:0;border-right:0;border-top:0;text-align:left" data-route="sync"><i class="status-dot ${state.syncQueue?.length?'yellow':'green'}"></i><div><b>Backup &amp; Connection</b><small>Export local work and check cloud access</small></div><span>›</span></button><div class="callout"><b>Shared crew is connected to your account.</b><br/>Crew profiles sync across devices. Other beta tools still save on this device. Open Team &amp; Access to sign out.</div><button class="small-btn" id="resetLocalBtn">Reset Local Beta Data</button>`;
     document.getElementById('resetLocalBtn').onclick=()=>{if(confirm('Reset this device’s beta reports, notes and other local entries? Shared crew profiles and your sign-in account will be kept.')){safeStorageRemove('rivetOneState');state=deepClone(DEFAULT_STATE);state.crew=sharedRoster().map(x=>[CrewCloud.initials(x.name),x.name]);persistState();render('home');}};
   } else content.innerHTML='<div class="placeholder">This screen is wired into the prototype navigation.</div>';
 
@@ -1249,11 +1256,8 @@ function renderProjectsPage(content){
 }
 function addProject(){if(!can('editProject'))return denied('create projects');const name=prompt('Project name');if(!name)return;const client=prompt('Company / client','')||'';const location=prompt('Location','')||'';const id=`project-${Date.now()}`;state.projects.unshift({id,name,client,location,status:'Active',phase:'Setup',members:1});state.currentProjectId=id;addActivity('📁',`Project created: ${name}`);saveState(`Project created: ${name}`);render('projects')}
 function renderTeamPage(content){renderCloudAccount(content);}
-function renderSyncPage(content){
-  const q=state.syncQueue||[];const online=navigator.onLine;
-  content.innerHTML=`<div class="permission-banner"><div><b>Local field-data sync simulator</b><small>Changes are durable on this device and queued for a future cloud backend.</small></div><span class="tag ${online?'low':'med'}">${online?'ONLINE':'OFFLINE'}</span></div><div class="sync-hero"><div class="sync-stat"><small>Pending changes</small><b>${q.length}</b></div><div class="sync-stat"><small>Last demo sync</small><b style="font-size:14px">${state.lastSync?esc(state.lastSync):'Never'}</b></div><div class="sync-stat"><small>Storage mode</small><b style="font-size:14px">Local + IndexedDB</b></div></div><div class="section-actions">${can('sync')?'<button class="small-btn orange" id="syncNowBtn">↻ Sync Now</button>':''}<span class="cloud-demo">This queue excludes shared crew, which is saved directly online.</span></div><h3>Offline Queue</h3>${q.length?q.map(x=>`<div class="queue-item"><i class="status-dot yellow"></i><div><b>${esc(x.text)}</b><small>${esc(x.by)} • ${esc(x.time)}</small></div><span>Pending</span></div>`).join(''):'<div class="empty-state">Everything in the local queue is marked synced.</div>'}<div class="callout"><b>Backend handoff ready.</b><br/>The production build should send these queue items through authenticated APIs, use object storage for drawings/photos, and merge conflicts by project record/version.</div>`;
-}
-function syncNow(){if(!can('sync'))return denied('run sync');if(!navigator.onLine)return toast('You are offline. Changes will stay queued.');const count=state.syncQueue?.length||0;toast(`Syncing ${count} change${count===1?'':'s'}…`);setTimeout(()=>{state.syncQueue=[];state.lastSync=new Date().toLocaleString();persistState();toast('Demo sync complete.');render('sync')},650)}
+function renderSyncPage(content){RivetConnection.render(content);}
+function syncNow(){render('sync');}
 function addActivity(icon,text){state.activity=state.activity||[];state.activity.unshift({icon,text,time:`${new Date().toLocaleString()} • ${currentUser().name}`});state.activity=state.activity.slice(0,30)}
 
 function wireRouteButtons(){document.querySelectorAll('[data-route]').forEach(btn=>{btn.onclick=()=>render(btn.dataset.route)})}
@@ -1292,7 +1296,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredIns
 document.getElementById('installBtn')?.addEventListener('click',async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;document.getElementById('installBanner')?.classList.remove('show')});
 
 
-function updateOnlineStatus(){const chip=document.getElementById('syncChip');const txt=document.getElementById('syncText');if(!chip||!txt)return;const online=navigator.onLine;const pending=state?.syncQueue?.length||0;chip.classList.toggle('offline',!online);txt.textContent=online?`Local • ${pending} pending`:`Offline • ${pending} queued`}
+function updateOnlineStatus(){window.RivetConnection?.update();}
 window.addEventListener('online',updateOnlineStatus);window.addEventListener('offline',updateOnlineStatus);updateOnlineStatus();
 
 document.getElementById('menuBtn').onclick=openAppMenu;
@@ -1300,16 +1304,15 @@ render('home');
 updateAccountUI();
 updateDateTime();
 setInterval(updateDateTime,30000);
+const connectionWarning=document.createElement('div');
+connectionWarning.id='cloudConnectionWarning';connectionWarning.className='callout';connectionWarning.hidden=true;connectionWarning.setAttribute('role','status');
+connectionWarning.innerHTML='<b>Shared connection unavailable</b><p data-cloud-warning-text></p><button class="small-btn" data-cloud-retry>Retry connection</button> <button class="small-btn" data-device-backup>Export this device</button><p data-backup-status></p>';
+document.getElementById('app').prepend(connectionWarning);
 initSharedCrewUI();
-// Upgrade a previously installed broad cache without installing a new worker.
+// Install the static shell only; private responses are never cached.
 // Shared uploads remain online-only; never cache Supabase responses.
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    const scope = new URL('./', location.href).href;
-    for (const registration of registrations) {
-      if (registration.scope === scope) void registration.update().catch(() => {});
-    }
-  }).catch(() => {});
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('./sw.js').then(registration=>registration.update()).catch(()=>{});
 }
 
 
