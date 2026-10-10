@@ -79,7 +79,7 @@ test('connection UI does not report navigator online as successful cloud access'
   assert.equal(describe({configured:true,signedIn:true,healthy:true},false).label,'Device offline');
 });
 test('entry points match; scripts parse; export is outside sign-in gate; demo sync cannot erase notices',()=>{
-  for(const file of ['index.html','index.html.html'])assert.equal(fs.readFileSync(path.join(root,file),'utf8'),html);
+  for(const file of ['index.html.html'])assert.equal(fs.readFileSync(path.join(root,file),'utf8'),html);
   for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))if(!match[1].includes('src='))new vm.Script(match[2]);
   for(const file of ['backup.js','connection-ui.js','documents-cloud.js','documents-ui.js','sw.js'])new vm.Script(fs.readFileSync(path.join(root,file),'utf8'));
   assert.match(html.slice(html.indexOf('id="introOverlay"'),html.indexOf('id="app"')),/data-device-backup/);
