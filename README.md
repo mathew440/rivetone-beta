@@ -1,4 +1,4 @@
-# RivetOne v0.10.0 — Projects & Service
+# RivetOne v0.10.1 — Projects & Service
 
 Based on the supplied `index-28.html` Final Working Beta. `index.html` and `index-28.html` preserve its Projects, Service dispatch, crew, calendar, materials, plans/measurements/overlays, issues, photos, reports, T&M, safety, and local summaries.
 
@@ -29,3 +29,10 @@ The HTML includes its backup implementation, so a downloaded copy does not need 
 - Append `?practice=1` to the app URL for a clearly marked, memory-only practice session using example records. Reload discards practice changes; persisted jobs are not read or changed.
 
 Run `node --test field-beta.test.cjs field-scenarios.test.cjs tests/recovery.test.cjs`.
+
+
+## v0.10.1 mobile layout
+
+The mobile mode switch occupies its own row. The bottom navigation occupies a separate flex row, with a scrolling content area above it and safe-area padding. Four service tabs share the full width; the AI control stays inside its bar. Header controls fit narrow screens, and section navigation resets the content scroll.
+
+Open `layout-check.html` and run the browser checks at 320–1180 CSS pixels in both modes. The harness uses practice records only.
