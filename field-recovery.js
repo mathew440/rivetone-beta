@@ -1,7 +1,7 @@
 /* Local Field Beta backup; never reads cloud credentials or other storage keys. */
 (function(global){
 'use strict';
-const KEY='rivetone-final-v1', VERSION='0.9.0';
+const KEY='rivetone-final-v1', VERSION='0.10.0';
   const MAX_BYTES = 128 * 1024 * 1024;
   const encoder = new TextEncoder();
   const crcTable = Array.from({length:256}, (_, n) => {
@@ -47,7 +47,7 @@ function createStore(storage){
  let blocked=false,raw=null,warning='',lastSaved=null,source='sample';
  return {
  load(seed){try{raw=storage.getItem(KEY);if(raw!==null){const data=validate(JSON.parse(raw));source='saved';return data;}}catch(e){blocked=true;warning='Saved data could not be read. Original storage is protected from replacement. Export a backup before recovery.';}return JSON.parse(JSON.stringify(seed));},
- save(value){if(blocked)throw Error(warning);try{const next=JSON.stringify(value);storage.setItem(KEY,next);raw=next;source='saved';warning='';lastSaved=new Date().toISOString();}catch(e){warning='Changes are only in memory: device storage is full or unavailable. Export now before closing.';throw Error(warning);}},
+ save(value){if(blocked)throw Error(warning);try{if(storage.getItem(KEY)!==raw)throw Error('Another tab changed these records. Export this tab before reloading to avoid overwriting newer work.');const next=JSON.stringify(value);storage.setItem(KEY,next);raw=next;source='saved';warning='';lastSaved=new Date().toISOString();}catch(e){warning=e.message.startsWith('Another tab')?e.message:'Save failed: device storage is full or unavailable. Keep the form open and export your draft before closing.';throw Error(warning);}},
  status(){return {blocked,warning,lastSaved,source};},
  async backup(current){
  const warnings=[];let stored=raw;

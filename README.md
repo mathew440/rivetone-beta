@@ -1,4 +1,4 @@
-# RivetOne v0.9.0 — Projects & Service
+# RivetOne v0.10.0 — Projects & Service
 
 Based on the supplied `index-28.html` Final Working Beta. `index.html` and `index-28.html` preserve its Projects, Service dispatch, crew, calendar, materials, plans/measurements/overlays, issues, photos, reports, T&M, safety, and local summaries.
 
@@ -15,3 +15,17 @@ The HTML includes its backup implementation, so a downloaded copy does not need 
 ## Validation
 
 `node --test field-beta.test.cjs tests/recovery.test.cjs`
+
+## v0.10.0 field workflow update
+
+- Search results stay open; search is available on phones with accessible labels.
+- Today filters use the device's local date for project assignments and service calls.
+- Callbacks are wired after rendering; completed service calls cannot accidentally cycle back to Scheduled.
+- Form saves cannot run twice concurrently. Invalid daily hours and missing dates are blocked. Failed saves restore existing records, retain form entries, and offer draft export. Unsaved forms prompt before dismissal.
+- Storage compares its last-read value before saving, stopping common stale-tab overwrites. This is not a multi-user sync system or a fully atomic cross-tab database.
+- Plan selections persist on rerender. Measurements use original image coordinates, reject clicks in image padding, and require recalibration of old screen-based scales. Verify physical dimensions before use.
+- Material deduplication preserves dimensions and receipt status. Notes are readable under More → Job Notes.
+- Job Apps stores per-job HTTPS links (Procore or other web tools) and offers a previewable text handoff. No credentials or automatic cross-app data transfers. Procore OAuth token exchange needs a secure server plus account authorization; it cannot safely be implemented by putting a client secret in this public HTML.
+- Append `?practice=1` to the app URL for a clearly marked, memory-only practice session using example records. Reload discards practice changes; persisted jobs are not read or changed.
+
+Run `node --test field-beta.test.cjs field-scenarios.test.cjs tests/recovery.test.cjs`.
