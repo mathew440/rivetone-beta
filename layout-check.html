@@ -1,9 +1,9 @@
 <!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RivetOne mobile layout checks</title>
 <style>body{font:15px system-ui;background:#07111d;color:white;margin:20px}button,select{font:inherit;padding:8px;margin:5px}iframe{border:1px solid #48718b;height:740px;background:#07111d}#result{white-space:pre-wrap} .pass{color:#9de8b6}</style>
-<h1>RivetOne mobile layout checks</h1><p>Uses isolated practice records. No saved jobs are read or changed.</p><button id="run">Run layout checks</button><label>Preview width <select id="width"><option>320</option><option>360</option><option>393</option><option selected>412</option><option>560</option><option>768</option><option>1180</option></select></label><p id="result" role="status">Ready</p><iframe title="Practice phone preview" id="preview" width="412" src="index.html?practice=1"></iframe>
+<h1>RivetOne mobile layout checks</h1><p>Uses isolated practice records. No saved jobs are read or changed.</p><button id="run">Run layout checks</button><label>Preview width <select id="width"><option>320</option><option>360</option><option>393</option><option selected>412</option><option>560</option><option>768</option><option>1180</option></select></label><p id="result" role="status">Ready</p><iframe title="Practice phone preview" id="preview" width="412" src="index.html?practice=1&layout=b7b6aee"></iframe>
 <script>
 const frame=document.querySelector('iframe'),result=document.querySelector('#result');
-const settle=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+const settle=()=>new Promise(r=>setTimeout(r,60));
 document.querySelector('#width').onchange=async e=>{frame.width=e.target.value;await settle()};
 document.querySelector('#run').onclick=async()=>{
  const d=frame.contentDocument;if(!d.querySelector('.app-scroll')){result.textContent='FAIL: v0.10.1 not loaded';return}let pass=0,fail=[];const check=(ok,label)=>{if(ok)pass++;else fail.push(label)};
