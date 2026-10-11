@@ -1,7 +1,7 @@
 /* Local Field Beta backup; never reads cloud credentials or other storage keys. */
 (function(global){
 'use strict';
-const KEY='rivetone-final-v1', VERSION='0.10.0';
+const KEY='rivetone-final-v1', VERSION='0.10.3';
   const MAX_BYTES = 128 * 1024 * 1024;
   const encoder = new TextEncoder();
   const crcTable = Array.from({length:256}, (_, n) => {
@@ -37,10 +37,25 @@ const KEY='rivetone-final-v1', VERSION='0.10.0';
   }
 
 function validate(value){
- if(!value || !Array.isArray(value.projects) || !value.projects.length || !value.projectData || !['projects','service'].includes(value.mode)) throw Error('Unrecognized project data');
- if(!value.projects.some(p=>p.id===value.currentProjectId)) throw Error('Missing current project');
- for(const p of value.projects){const d=value.projectData[p.id];if(!d || !['crew','calendar','materials','workItems','messages','photos','plans','progress','notes','tm','safety'].every(k=>Array.isArray(d[k]))) throw Error('Incomplete project data');}
- if(!value.service || !['techs','vans','customers','calls'].every(k=>Array.isArray(value.service[k]))) throw Error('Incomplete service data');
+ const record=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+ const rows=(items,label)=>{if(!Array.isArray(items)||items.some(x=>!record(x)))throw Error('Invalid '+label);return items;};
+ const text=(x,key,required=false)=>{if((required||x[key]!==undefined)&&typeof x[key]!=='string')throw Error('Invalid '+key);};
+ const idRows=(items,label)=>{const seen=new Set();for(const x of rows(items,label)){text(x,'id',true);if(!x.id||seen.has(x.id))throw Error('Invalid '+label+' ID');seen.add(x.id);}return items;};
+ if(!record(value)||!Array.isArray(value.projects)||!value.projects.length||!record(value.projectData)||!['projects','service'].includes(value.mode))throw Error('Unrecognized project data');
+ idRows(value.projects,'projects');if(!value.projects.some(p=>p.id===value.currentProjectId))throw Error('Missing current project');
+ for(const p of value.projects){text(p,'name',true);if(p.appLinks!==undefined){for(const link of rows(p.appLinks,'app links')){text(link,'name',true);text(link,'url',true);}}
+  const d=value.projectData[p.id];if(!record(d))throw Error('Incomplete project data');
+  for(const key of ['crew','calendar','materials','workItems','messages','photos','plans','notes','tm','safety'])idRows(d[key],key);
+  for(const c of d.crew)text(c,'name',true);
+  for(const c of d.calendar){text(c,'date',true);text(c,'time');}
+  for(const g of d.materials){text(g,'name',true);for(const item of idRows(g.items,'material items'))text(item,'desc',true);}
+  for(const m of d.messages)text(m,'body',true);
+  for(const pr of rows(d.progress,'progress')){text(pr,'name',true);if(!Number.isFinite(pr.pct)||pr.pct<0||pr.pct>100)throw Error('Invalid progress');}
+  for(const pl of d.plans){if(pl.pxPerFt!=null&&(!Number.isFinite(pl.pxPerFt)||pl.pxPerFt<=0))throw Error('Invalid drawing scale');if(pl.measurements!==undefined)for(const m of rows(pl.measurements,'measurements'))if(!Number.isFinite(m.feet)||m.feet<0)throw Error('Invalid measurement');}
+  if(d.dailyReports!==undefined)for(const report of idRows(d.dailyReports,'daily reports')){text(report,'date',true);if(!/^\d{4}-\d{2}-\d{2}$/.test(report.date))throw Error('Invalid report date');for(const key of ['crew','completed','blockers','next','safety','weather'])text(report,key);}
+ }
+ if(!record(value.service))throw Error('Incomplete service data');for(const key of ['techs','vans','customers','calls'])idRows(value.service[key],key);
+ for(const call of value.service.calls){text(call,'date',true);text(call,'time');}
  return value;
 }
 function createStore(storage){
