@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rivetone-static-v0101';
+const CACHE_NAME = 'rivetone-static-v0102';
 const ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,10 @@ const ASSETS = [
   './documents-cloud.js?v=3',
   './documents-ui.js?v=4',
   './manifest.webmanifest',
+  './rivet-r-192.png',
+  './rivet-r-512.png',
+  './rivet-r-32.png',
+  './rivet-r-apple.png',
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png',

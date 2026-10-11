@@ -1,4 +1,4 @@
-# RivetOne v0.10.1 — Projects & Service
+# RivetOne v0.10.2 — Projects & Service
 
 Based on the supplied `index-28.html` Final Working Beta. `index.html` and `index-28.html` preserve its Projects, Service dispatch, crew, calendar, materials, plans/measurements/overlays, issues, photos, reports, T&M, safety, and local summaries.
 
@@ -36,3 +36,8 @@ Run `node --test field-beta.test.cjs field-scenarios.test.cjs tests/recovery.tes
 The mobile mode switch occupies its own row. The bottom navigation occupies a separate flex row, with a scrolling content area above it and safe-area padding. Four service tabs share the full width; the AI control stays inside its bar. Header controls fit narrow screens, and section navigation resets the content scroll.
 
 Open `layout-check.html` and run the browser checks at 320–1180 CSS pixels in both modes. The harness uses practice records only.
+
+
+## v0.10.2 navigation and icon
+
+Mode switches roll back to the current screen if storage cannot save, retaining the persistent backup warning. Search queries do not trigger unsaved-record dismissal prompts. The selected steel/orange Rivet R is installed as the header, favicon and app manifest icon, with padding for phone masks. Existing installed shortcuts may take time to refresh their icon.
