@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rivetone-static-v0102';
+const CACHE_NAME = 'rivetone-static-v0103';
 const ASSETS = [
   './',
   './index.html',

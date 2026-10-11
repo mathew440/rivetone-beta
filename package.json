@@ -1,0 +1,13 @@
+{
+  "name": "rivetone-field-beta",
+  "private": true,
+  "version": "0.10.3",
+  "description": "Device-only field workflows with local regression tests",
+  "scripts": {
+    "test": "node --test field-beta.test.cjs field-scenarios.test.cjs tests/*.test.cjs",
+    "test:core": "node --test field-beta.test.cjs field-scenarios.test.cjs tests/recovery.test.cjs tests/storage-audit.test.cjs",
+    "test:dom": "node --test tests/dom-workflows.test.cjs"
+  },
+  "devDependencies": { "jsdom": "27.0.0" },
+  "engines": { "node": ">=22.12.0" }
+}

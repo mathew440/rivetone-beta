@@ -1,4 +1,4 @@
-# RivetOne v0.10.2 — Projects & Service
+# RivetOne v0.10.3 — Local review build
 
 Based on the supplied `index-28.html` Final Working Beta. `index.html` and `index-28.html` preserve its Projects, Service dispatch, crew, calendar, materials, plans/measurements/overlays, issues, photos, reports, T&M, safety, and local summaries.
 
@@ -14,7 +14,9 @@ The HTML includes its backup implementation, so a downloaded copy does not need 
 
 ## Validation
 
-`node --test field-beta.test.cjs tests/recovery.test.cjs`
+`npm ci && npm test` (Node 22.12+). No build step is required for the app.
+
+Dependency-free checks: `node --test field-beta.test.cjs field-scenarios.test.cjs tests/recovery.test.cjs tests/storage-audit.test.cjs`.
 
 ## v0.10.0 field workflow update
 
@@ -41,3 +43,22 @@ Open `layout-check.html` and run the browser checks at 320–1180 CSS pixels in 
 ## v0.10.2 navigation and icon
 
 Mode switches roll back to the current screen if storage cannot save, retaining the persistent backup warning. Search queries do not trigger unsaved-record dismissal prompts. The selected steel/orange Rivet R is installed as the header, favicon and app manifest icon, with padding for phone masks. Existing installed shortcuts may take time to refresh their icon.
+
+
+## v0.10.3 usability and recovery changes (draft review)
+
+- One-tap Daily report opens a dated editor. Saved reports can be reviewed, edited, backfilled for other dates, and downloaded as text under More → Reports. Reports stay isolated by project and are included in device backups.
+- Daily reports suggest only On Site crew names with blank hours. Old profile hours, assignments and sample weather are never silently treated as verified shift facts. Saved report text is a snapshot; later profile edits do not rewrite it.
+- Full-label Daily report, Add photo, Create item and Job note buttons are near the top of Today. Work Items defaults to open records, with explicit All and Closed views, type-aware creation and crew-name suggestions.
+- Direct status changes, deletion, project selection, measurement saves and Undo roll back if storage fails. Undo expires after ten seconds and is invalidated by another save or opening a form so it cannot erase newer work.
+- Completed callbacks no longer remain in active attention or notification counts. Material entry preserves dimensions such as 1" EMT, 2" EMT and 1 1/4" EMT; use (6), 6 ea or 6 x for counts.
+- Nested malformed data is protected from replacement and recoverable as an original backup. Modal dismissal retains its backdrop briefly to catch rapid repeated clicks. Form controls lock during asynchronous save, focus is restored, and long-record phone layouts have wrapping rules.
+- Local job messages explicitly say they are not sent. Job links reject credential-bearing query strings and URL fragments.
+
+### Review safely
+
+This is a draft review build based on `db59c261d257b807b43c7bcaf6d831904bf11e17`. The production database, main branch and live app are unchanged. Keep existing site data and export a backup before any later deployment.
+
+Serve the folder with a local static server, for example `python3 -m http.server 8000`, and open `http://localhost:8000/?practice=1`. Practice changes disappear on reload. A local or downloaded copy cannot see records from the deployed HTTPS origin. Use `layout-check.html` for actual browser layout verification.
+
+The revised build passes automated core and jsdom DOM-event tests. jsdom is not a rendering browser: revised phone layout, Safari/iOS, camera/photo decoding, PDF imports, service-worker update/offline launch and physical-device double-tap behavior still need a real-browser pass. See `QA_REPORT.md` for the verification boundary and next priorities.

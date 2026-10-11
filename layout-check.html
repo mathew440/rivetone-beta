@@ -1,12 +1,12 @@
 <!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RivetOne mobile layout checks</title>
 <style>body{font:15px system-ui;background:#07111d;color:white;margin:20px}button,select{font:inherit;padding:8px;margin:5px}iframe{border:1px solid #48718b;height:740px;background:#07111d}#result{white-space:pre-wrap} .pass{color:#9de8b6}</style>
-<h1>RivetOne mobile layout checks</h1><p>Uses isolated practice records. No saved jobs are read or changed.</p><button id="run">Run layout checks</button><label>Preview width <select id="width"><option>320</option><option>360</option><option>393</option><option selected>412</option><option>560</option><option>768</option><option>1180</option></select></label><p id="result" role="status">Ready</p><iframe title="Practice phone preview" id="preview" width="412" src="index.html?practice=1&layout=0102"></iframe>
+<h1>RivetOne mobile layout checks</h1><p>Uses isolated practice records. No saved jobs are read or changed.</p><button id="run">Run layout checks</button><label>Preview width <select id="width"><option>320</option><option>360</option><option>393</option><option selected>412</option><option>560</option><option>768</option><option>1180</option></select></label><p id="result" role="status">Ready</p><iframe title="Practice phone preview" id="preview" width="412" src="index.html?practice=1&layout=0103"></iframe>
 <script>
 const frame=document.querySelector('iframe'),result=document.querySelector('#result');
 const settle=()=>new Promise(r=>setTimeout(r,60));
 document.querySelector('#width').onchange=async e=>{frame.width=e.target.value;await settle()};
 document.querySelector('#run').onclick=async()=>{
- const d=frame.contentDocument;if(!d.querySelector('.app-scroll')){result.textContent='FAIL: v0.10.2 not loaded';return}let pass=0,fail=[];const check=(ok,label)=>{if(ok)pass++;else fail.push(label)};
+ const d=frame.contentDocument;if(!d.querySelector('.app-scroll')){result.textContent='FAIL: Review build not loaded';return}let pass=0,fail=[];const check=(ok,label)=>{if(ok)pass++;else fail.push(label)};
  for(const width of [320,360,393,412,560,768,1180]){frame.width=width;await settle();
  for(const mode of ['projects','service']){d.getElementById(mode+'Mode').click();await settle();
  const sc=d.querySelector('.app-scroll'),nav=d.querySelector('.bottom'),rect=s=>d.querySelector(s).getBoundingClientRect(),tag=width+' '+mode;
@@ -18,6 +18,15 @@ document.querySelector('#run').onclick=async()=>{
  check([...d.querySelectorAll('.brand-wrap,#searchBtn,#bellBtn,#avatarBtn')].every(e=>e.getBoundingClientRect().right<=width),tag+' header clipping');
  sc.scrollTop=sc.scrollHeight;await settle();check(rect('.section.active').bottom<=nav.getBoundingClientRect().top+1,tag+' last content unreachable');sc.scrollTop=0;
  }}
+ // Exercise long real records too; home-screen geometry alone misses these failures.
+ for(const width of [320,360,393,412,560,768,1180]){
+  frame.width=width;d.getElementById('projectsMode').click();d.querySelector('[data-open="crew"]').click();d.getElementById('addCrewBtn').click();
+  const name='Layout QA '+width+' '+('LongCrewName'.repeat(10));d.getElementById('cfName').value=name;d.getElementById('cfHours').value='7.5';d.getElementById('modalSave').click();await new Promise(r=>setTimeout(r,450));
+  const sc=d.querySelector('.app-scroll'),row=[...d.querySelectorAll('#crewList .row')].find(r=>r.textContent.includes(name)),tag=width+' long crew';
+  check(Boolean(row),tag+' record saved');check(sc.scrollWidth<=sc.clientWidth+1,tag+' horizontal overflow');
+  const actions=row?[...row.querySelectorAll('button')]:[];check(actions.length===2&&actions.every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=width+1}),tag+' profile/remove clipped');
+  row?.querySelector('[data-crew-del]')?.click();await settle();
+ }
  frame.width=412;d.getElementById('serviceMode').click();d.querySelector('#practiceBanner').classList.add('hidden');await settle();result.textContent=pass+' checks passed; '+fail.length+' failed'+(fail.length?'\n'+fail.join('\n'):'');result.className=fail.length?'':'pass';
 };
 </script>
