@@ -1,4 +1,8 @@
-# RivetOne v0.10.3 — Local review build
+# RivetOne v0.10.3 — Projects & Service
+
+[Open the live app](https://mathew440.github.io/rivetone-beta/).
+
+v0.10.3 was merged to `main` in [PR #1](https://github.com/mathew440/rivetone-beta/pull/1) on October 11, 2026. App commit [`abd8a609`](https://github.com/mathew440/rivetone-beta/commit/abd8a60987fac1b1a1454d9c60a90a55a5e62cf8) was published by a [successful GitHub Pages deployment](https://github.com/mathew440/rivetone-beta/actions/runs/38174398544). The live app was checked again on October 14, 2026 and displays v0.10.3.
 
 Based on the supplied `index-28.html` Final Working Beta. `index.html` and `index-28.html` preserve its Projects, Service dispatch, crew, calendar, materials, plans/measurements/overlays, issues, photos, reports, T&M, safety, and local summaries.
 
@@ -45,7 +49,7 @@ Open `layout-check.html` and run the browser checks at 320–1180 CSS pixels in 
 Mode switches roll back to the current screen if storage cannot save, retaining the persistent backup warning. Search queries do not trigger unsaved-record dismissal prompts. The selected steel/orange Rivet R is installed as the header, favicon and app manifest icon, with padding for phone masks. Existing installed shortcuts may take time to refresh their icon.
 
 
-## v0.10.3 usability and recovery changes (draft review)
+## v0.10.3 usability and recovery changes
 
 - One-tap Daily report opens a dated editor. Saved reports can be reviewed, edited, backfilled for other dates, and downloaded as text under More → Reports. Reports stay isolated by project and are included in device backups.
 - Daily reports suggest only On Site crew names with blank hours. Old profile hours, assignments and sample weather are never silently treated as verified shift facts. Saved report text is a snapshot; later profile edits do not rewrite it.
@@ -55,10 +59,12 @@ Mode switches roll back to the current screen if storage cannot save, retaining 
 - Nested malformed data is protected from replacement and recoverable as an original backup. Modal dismissal retains its backdrop briefly to catch rapid repeated clicks. Form controls lock during asynchronous save, focus is restored, and long-record phone layouts have wrapping rules.
 - Local job messages explicitly say they are not sent. Job links reject credential-bearing query strings and URL fragments.
 
-### Review safely
+### Use and test safely
 
-This is a draft review build based on `db59c261d257b807b43c7bcaf6d831904bf11e17`. The production database, main branch and live app are unchanged. Keep existing site data and export a backup before any later deployment.
+v0.10.3 is deployed. The October 14 release-listing and README update documents that existing app version; it does not change app code, local records, cloud data, permissions or subscriptions. Keep existing site data and export a backup before future app updates.
 
 Serve the folder with a local static server, for example `python3 -m http.server 8000`, and open `http://localhost:8000/?practice=1`. Practice changes disappear on reload. A local or downloaded copy cannot see records from the deployed HTTPS origin. Use `layout-check.html` for actual browser layout verification.
 
-The revised build passes automated core and jsdom DOM-event tests. jsdom is not a rendering browser: revised phone layout, Safari/iOS, camera/photo decoding, PDF imports, service-worker update/offline launch and physical-device double-tap behavior still need a real-browser pass. See `QA_REPORT.md` for the verification boundary and next priorities.
+The recorded v0.10.3 run in [TEST_RESULTS.txt](TEST_RESULTS.txt) passed 80 automated tests, including core/recovery, production-handler/data-integrity, jsdom DOM workflows and bounded stress checks. Those tests were not rerun for this documentation-only update. The October 14 check confirmed that the live app loads and displays v0.10.3; it was not a full regression run.
+
+jsdom does not validate actual browser rendering or touch behavior. Safari/iOS, physical-device camera/photo and PDF decoding, service-worker update/offline launch, and physical double-tap behavior remain separate verification areas. [QA_REPORT.md](QA_REPORT.md) records the earlier pre-merge review state; its draft and deployment statements are historical, not the current release status.
